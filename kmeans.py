@@ -12,6 +12,10 @@ node_num = 50
 score = [[0]*24 for i in range(node_num)]
 lat = []
 lng = []
+mean_x = 0 # center y of map
+mean_y = 0 # center x of map
+center = [] # center coordinate of clusters
+time_step = 10 # 10 mins
 def transform(lat, lon):
 	er = 6378137.0
 	s = np.cos(lat0 * math.pi/180)
@@ -32,6 +36,7 @@ def read_csv():
 	flag = 0
 	# pos = []
 	for line in reader:
+		count +=1 
 		if (line[1][9]!=str(1) or line[5]==str(0)):
 			continue
 		# TODO 
@@ -44,28 +49,29 @@ def read_csv():
 
 		# pos.append(float[line5])
 		# print pos[count]
-		count +=1 
+	print "count: ", count
 
 def update_pos(pos):
 	sumx = 0
 	sumy = 0
+	new_pos = []
 	for subpos in pos:
 		sumx += subpos[0]
 		sumy += subpos[1]
 
+	global mean_x, mean_y
 	mean_x = sumx/len(pos)
 	mean_y = sumy/len(pos)
 
-	pos_copy = pos
-	pos = []
+	new_pos = []
 	print "average x", mean_x
 	print "average y", mean_y
-	for subpos in pos_copy:
-		if (abs(mean_x-subpos[0]) < 200000 and subpos[1] < -10503986):
-			pos.append(subpos)
+	for subpos in pos:
+		if (abs(mean_x-subpos[0]) < 20000 and abs(subpos[1]-mean_y) < 20000):
+			new_pos.append(subpos)
 		else:
 			print subpos[0]
-	return pos
+	return new_pos
 
 
 
@@ -74,8 +80,10 @@ def Kmeans_cluster(X,n_clusters):
     kmeans=KMeans(n_clusters=n_clusters,random_state=0).fit(X)
     print kmeans.cluster_centers_
     label_id = kmeans.labels_.tolist()
+    global center
+    center = kmeans.cluster_centers_.tolist()
     # print label_id
-    return label_id
+    return label_id, center
 
 def sum_up(label_id):
 	file = open("yellow_tripdata_2016-01.csv", "r")
@@ -86,9 +94,12 @@ def sum_up(label_id):
 			continue
 		if (count > test_num):
 			break
+		# format
 		# 2016-01-01 00:00:00
 		# 0123456789
 		time = int(line[1][11:13])
+		if (count == len(label_id)):
+			return 
 		score[label_id[count]][time] += int(line[3])
 		count += 1
 
@@ -97,32 +108,45 @@ def output():
 	gps_file = open(gps_file_name, 'w')
 	for i in range(0, node_num):
 		for j in range(0, 24):
-			s =  str(score[i][j])
-			gps_file.write('%s \n' % s)
+			s = score[i][j]
+			center_x = center[i][0] - mean_x
+			center_y = center[i][1] - mean_y
+			gps_file.write('%d %d %d %d %d\n' %(i, j, center_x, center_y, s))
 	gps_file.close() 
 
-def plot(pos, label):
-	for i in pos:
-		lat.append(i[0])
-		lng.append(i[1])
-	print label_id
-	plt.scatter(lat,lng,c=label)
+def plot(flag, pos, label):
+	# plot every point
+	if flag == 0: 
+		for i in pos:
+			lat.append(i[0])
+			lng.append(i[1])
+		print label_id
+		plt.scatter(lat,lng,c=label)
+	# plot only clusters center 
+	else:
+		center_x = []
+		center_y = []
+		color = []
+		count = 0
+		for i in center:
+			center_x.append(i[0])
+			center_y.append(i[1])
+			color.append(count)
+			count += 1
+		plt.scatter(center_x, center_y, c=color)
 	plt.show()
 
 def main():
 	read_csv()
-	# pos_res = update_pos(pos)
-	# plot(pos)
-	print "plot finish"
-	label_id = Kmeans_cluster(pos,n_clusters=node_num)
+	pos_res = update_pos(pos)
+	label_id, center = Kmeans_cluster(pos_res, n_clusters=node_num)
 	# print Kmeans_cluster(pos,n_clusters=node_num)
 	print "kmeans finish"
-	
-	plot(pos, label_id)
+	plot(0, pos_res, label_id)
+	print "plot finish"
 	sum_up(label_id)
 	print "sum_up finish"
 	output()
-	print score
 
 
 if __name__=='__main__':
