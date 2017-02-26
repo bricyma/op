@@ -140,7 +140,6 @@ def main():
 	read_csv()
 	pos_res = update_pos(pos)
 	label_id, center = Kmeans_cluster(pos_res, n_clusters=node_num)
-	# print Kmeans_cluster(pos,n_clusters=node_num)
 	print "kmeans finish"
 	plot(0, pos_res, label_id)
 	print "plot finish"
