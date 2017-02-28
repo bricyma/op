@@ -4,18 +4,6 @@ import csv
 import math
 import matplotlib.pyplot as plt
 import pylab as pl
-#TODO
-#python
-#output minscore to the file
-
-#c++
-#read data
-#vector<real_vetex> v to store the positions
-#vector<vector<int> > score to store the score function (resolution: 1min)
-#call function collect_data() get the real vertex
-#get the score through extern variable score
-#init graph with the score function and v
-
 
 pos = []
 lat0 = 0
@@ -23,9 +11,6 @@ label_id = []
 test_num = 400000
 node_num = 50
 time_step = 1 # 10 mins
-# score_min = [0] * (60/time_step)
-# score_hour = [score_min for i in range(24)]
-# score = [score_hour for i in range(node_num)]
 score = np.zeros((node_num,24,60/time_step))
 score_hour = [[0]*24 for i in range(node_num)]
 lat = []
@@ -41,7 +26,6 @@ def transform(lat, lon):
 	l = [tx,ty]
 	return l 	
 
-
 def read_csv():
 	file=open("yellow_tripdata_2016-01.csv", "r")
 	reader = csv.reader(file)
@@ -51,7 +35,6 @@ def read_csv():
 		count +=1 
 		if (line[1][9]!=str(1) or line[5]==str(0)):
 			continue
-		# TODO 
 		if (count > test_num):
 			break
 		if (flag!=0):
@@ -78,8 +61,6 @@ def update_pos(pos):
 	for subpos in pos:
 		if (abs(mean_x-subpos[0]) < 20000 and abs(subpos[1]-mean_y) < 20000):
 			new_pos.append(subpos)
-		# else:
-		# 	print subpos[0]
 	return new_pos
 
 
@@ -117,8 +98,6 @@ def sum_up(label_id):
 		# could change to += 1, if passenger_count doesn't have connection with score
 		score[label_id[count]][time_hour][time_min] = score[label_id[count]][time_hour][time_min]+1
 		count += 1
-		# print count, int(line[3])
-	# print score, count
 	print "sum_up end"
 
 def output():
@@ -161,13 +140,11 @@ def plot(flag, pos, label):
 			center_y.append(i[1])
 			color.append(count)
 			count += 1
-		plt.scatter(center_x, center_y, c=color)
+		plt.scatter(center_x, center_y, c=color, s=200)
 	plt.show()
 
 def plot_scatter():
 	index = np.linspace(0, 24, 1440)
-	# for i in range (0,24*60):
-	# 	index.append(i/60.0)
 	values = []
 	# for i in range (0, 24):
 	# 	for j in range (0, 60):
@@ -195,7 +172,7 @@ def main():
 	pos_res = update_pos(pos)
 	label_id, center = Kmeans_cluster(pos_res, n_clusters=node_num)
 	print "kmeans finish"
-	# plot(0, pos_res, label_id)
+	plot(1, pos_res, label_id)
 	print "plot finish"
 	sum_up(label_id)
 	print "sum_up finish"
